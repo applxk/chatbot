@@ -11,26 +11,61 @@ def wheel():
     return render_template('includes/wheel.html')
 
 @app.route('/spin', methods=['POST'])
+@app.route('/spin', methods=['POST'])
 def spin_wheel():
     # Assuming your promo codes are alphanumeric strings of length 8
     promo_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+    # Append the generated promo code to the list
+    generated_promo_codes.append(promo_code)
+
     return jsonify({'promo_code': promo_code})
+
+
+#coupons
+
+# List to store generated promo codes
+generated_promo_codes = []
+
+@app.route('/mycoupons')
+def my_coupons():
+    return render_template('includes/mycoupons.html', promo_codes=generated_promo_codes)
+
 
 #chatbot
 @app.route('/')
 def home():
     # Default greeting message
     default_message = "Hello! I'm a chatbot. How can I assist you today?"
-    return render_template('includes/index.html', default_message=default_message)
+    return render_template('includes/index.html', current_url=request.path)
+
+# List to store chat messages
+chat_messages = []
+
+# start chatbot
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    user_input = request.form.get('user_input')
+
+    if user_input:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        formatted_message = f'[{timestamp}] User: {user_input}'
+
+        chat_messages.append(formatted_message)
+
+        # You can add further processing or send the message to your chatbot logic here
+
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'status': 'error', 'message': 'Empty message'})
+
+@app.route('/get_messages')
+def get_messages():
+    return jsonify({'messages': chat_messages})
 
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.form['user_message']
-    response = generate_response(user_message)
-    return {'bot_message': response}
-
-def generate_response(user_message):
-    # Convert user message to lowercase for case-insensitive matching
     user_message_lower = user_message.lower()
 
     if any(greeting in user_message_lower for greeting in ['hi', 'hello', 'hey']):
@@ -65,7 +100,6 @@ def generate_response(user_message):
         return "I'm not sure how to respond to that. Can you please be more specific?"
 
 def is_english(text):
-    # This function checks if the text is in English
     try:
         text.encode(encoding='utf-8').decode('ascii')
     except UnicodeDecodeError:
