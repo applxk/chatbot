@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify
 import random
 import string
-import datetime
+from datetime import datetime
+from backend import store_chat_messages, retrieve_chat_messages
 
 app = Flask(__name__)
 
@@ -11,9 +12,8 @@ def wheel():
     return render_template('includes/wheel.html')
 
 @app.route('/spin', methods=['POST'])
-@app.route('/spin', methods=['POST'])
 def spin_wheel():
-    # Assuming your promo codes are alphanumeric strings of length 8
+    # promo codes are alphanumeric strings of length 8
     promo_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
     # Append the generated promo code to the list
@@ -33,16 +33,16 @@ def my_coupons():
 
 
 #chatbot
-@app.route('/')
-def home():
-    # Default greeting message
-    default_message = "Hello! I'm a chatbot. How can I assist you today?"
-    return render_template('includes/index.html', current_url=request.path)
 
 # List to store chat messages
 chat_messages = []
 
-# start chatbot
+
+@app.route('/')
+def home():
+    return render_template('includes/index.html', current_url=request.path)
+
+
 @app.route('/send_message', methods=['POST'])
 def send_message():
     user_input = request.form.get('user_input')
@@ -53,19 +53,16 @@ def send_message():
 
         chat_messages.append(formatted_message)
 
-        # You can add further processing or send the message to your chatbot logic here
-
         return jsonify({'status': 'success'})
     else:
         return jsonify({'status': 'error', 'message': 'Empty message'})
+
 
 @app.route('/get_messages')
 def get_messages():
     return jsonify({'messages': chat_messages})
 
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_message = request.form['user_message']
+def chatbot_response(user_message):
     user_message_lower = user_message.lower()
 
     if any(greeting in user_message_lower for greeting in ['hi', 'hello', 'hey']):
@@ -93,9 +90,8 @@ def chat():
         return f"Sure! You can find details about the plastic bag [here]({reference_link}). <br> Are there any other inquiries?"
 
     else:
-        # Check if the message is not in English
         if not is_english(user_message_lower):
-            return "Sorry, I only understand English. Please use Google Translate to English and send in the response. Thank you."
+            return "Sorry, I only understand English. Please use Google Translate and send the response. Thank you."
 
         return "I'm not sure how to respond to that. Can you please be more specific?"
 
@@ -106,6 +102,31 @@ def is_english(text):
         return False
     else:
         return True
+
+@app.route('/chatbotbackend_viewer')
+def chatbotbackend_viewer():
+    return render_template('includes/chatbotbackend.html')
+
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.form['user_message']
+
+    # Generate chatbot response
+    response = chatbot_response(user_message)
+
+    # Append user and chatbot messages to chat_messages list
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    user_formatted_message = f'[{timestamp}] User: {user_message}'
+    chat_messages.append(user_formatted_message)
+
+    chatbot_formatted_message = f'[{timestamp}] Chatbot: {response}'
+    chat_messages.append(chatbot_formatted_message)
+
+    # Store messages using shelves
+    store_chat_messages(chat_messages)
+
+    return response
 
 
 #membership
