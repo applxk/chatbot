@@ -3,108 +3,24 @@
 
 
 {% block content %}
-<h2>Body content</h2>
-<p>Hello!</p>
-
-<link rel="stylesheet"  href="{{ url_for('static', filename='/chatbotstyle.css') }}">
-
-<!-----Chatbot testing----->
-<body class="show-chatbot">
-    <div class="chatbot-toggler">
-        <span class="message"><img src="static/images/message.png"></span>
-        <span class="cross"><img src="static/images/cross.png"></span>
-    </div>
-
-    <div class="chatbot">
-        <header>
-            <h2>Chatbot</h2>
-        </header>
-
-        <ul class="chatbox" id="chat-display">
-            <li class="chat incoming">
-                <img src="static/images/robot.jpg" width="50" height="50"><p class="bot-message">{{ default_message }}</p>
-            </li>
-        </ul>
-
-        <div class="chat-input">
-            <textarea id="user-input" placeholder="Enter a message..." required></textarea>
-            <button onclick="sendMessage()">Send</button>
+ <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='chatbotstyle.css')}}"/>
+    <div id="chat-container">
+        <div id="chat-header" onclick="toggleChat()">
+            <span class="user-icon"></span> Chatbot
+            <span id="toggle-icon" class="close-icon">❌</span>
+        </div>
+        <div id="chat-body"></div>
+        <div id="input-container">
+            <form id="chat-form">
+                <input type="text" name="user_message" placeholder="Type your message" onkeypress="handleKeyPress(event)">
+                <button type="button" onclick="sendMessage()">Send</button>
+            </form>
         </div>
     </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const chatInput = document.querySelector("#user-input");
-    const userDisplay = document.querySelector("#user-display");
-    const chatbox = document.querySelector(".chatbox");
+    <button class="toggle-button" onclick="toggleChat()">💬</button>
+    <script src="{{ url_for('static', filename='javascript.js') }}"></script>
 
-    const createChatLi = (message, className) => {
-        // Create a chat <li> element with passed message and className
-        const chatLi = document.createElement("li");
-        chatLi.classList.add("chat", `${className}`);
-        let chatContent = className === "outgoing" ? `<p></p>` : `<span class="material-symbols-outlined">smart_toy</span><p></p>`;
-        chatLi.innerHTML = chatContent;
-        chatLi.querySelector("p").textContent = message;
-        return chatLi; // return chat <li> element
-    }
-
-    const generateResponse = (incomingChatLi) => {
-        const messageElement = incomingChatLi.querySelector("p");
-
-        fetch(requestOptions)
-            .then(res => res.json())
-            .then(data => messageElement.textContent = data.choices[0].message.content)
-            .catch(() => messageElement.textContent = "Error");
-    }
-
-    const handleChat = () => {
-        userMessage = chatInput.value.trim();
-        if (!userMessage) return;
-
-        chatbox.appendChild(createChatLi(userMessage, "outgoing"));
-
-        setTimeout(() => {
-            chatbox.appendChild(incomingChatLi);
-            generateResponse(incomingChatLi);
-        }, 600);
-    }
-
-    function displayMessage(sender, message) {
-        const chatDisplay = document.getElementById('chat-display');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `${sender}-message`;
-        messageDiv.innerHTML = `<strong>${sender}: </strong>${message}`;
-        chatDisplay.appendChild(messageDiv);
-        chatInput.value = '';
-    }
-
-    function displayUserMessage(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'user-message';
-        messageDiv.innerHTML = `<p>${message}</p>`;
-        userDisplay.appendChild(messageDiv);
-        chatInput.value = '';
-    }
-    window.sendMessage = function () {
-        const userMessage = chatInput.value;
-        displayMessage('user', userMessage);
-
-        fetch('/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'user_message=' + encodeURIComponent(userMessage),
-        })
-            .then(response => response.json())
-            .then(data => displayMessage('bot', data.bot_message))
-            .catch(error => console.error('Error:', error));
-    }
-
-    document.querySelector('.chatbot-toggler').addEventListener('click', function () {
-    document.querySelector('.chatbot').classList.toggle('show-chatbot');
-    });
-});
-
-</script>
 {% endblock %}
